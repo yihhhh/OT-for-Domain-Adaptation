@@ -1,3 +1,5 @@
+from . import *
+
 class Mapping(nn.Module):
     def __init__(self, ot_plan, dim):
         super().__init__()

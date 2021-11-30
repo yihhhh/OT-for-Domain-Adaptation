@@ -1,3 +1,5 @@
+from . import *
+
 class OTPlan(nn.Module):
     def __init__(self, source_type='discrete',
                  target_type = 'discrete',
