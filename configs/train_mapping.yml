@@ -1,0 +1,18 @@
+target_dim: 256
+source_dim: 256
+
+ot_plan:
+  batch_size: 128
+  load_model: False
+  load_name: './checkpoints/toy_1130'
+  train_model: True
+  save_name: './checkpoints/toy_1130'
+  lr: 0.002
+
+mapping:
+  batch_size: 128
+  load_model: False
+  load_name: './checkpoints/toy_1130'
+  train_model: True
+  save_name: './checkpoints/toy_1130'
+  lr: 0.002
