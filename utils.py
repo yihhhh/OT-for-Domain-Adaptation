@@ -37,3 +37,34 @@ def l2_distance(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     y2 = torch.sum(y ** 2, dim=1)[None, :]
     K = x2 + y2 - xTy
     return K
+
+class IterationBasedBatchSampler:
+    """
+    Wraps a BatchSampler, resampling from it until
+    a specified number of iterations have been sampled
+    """
+
+    def __init__(self, src_batch_sampler, dst_batch_sampler, batch_size, num_iterations, start_iter=0):
+        self.src_batch_sampler = src_batch_sampler
+        self.dst_batch_sampler = dst_batch_sampler
+        self.batch_size = batch_size
+        self.num_iterations = num_iterations
+        self.start_iter = start_iter
+
+    def __iter__(self):
+        for i in range(self.num_iterations):
+            src_batch, dst_batch = [], []
+            for s in self.src_batch_sampler:
+                # print("src shape: ", self.src_batch_sampler.data_source[s].shape)
+                src_batch.append(self.src_batch_sampler.data_source[s])
+                if self.batch_size == len(src_batch):
+                    break
+            for d in self.dst_batch_sampler:
+                # print("dst shape: ", self.dst_batch_sampler.data_source[d].shape)
+                dst_batch.append(self.dst_batch_sampler.data_source[d])
+                if self.batch_size == len(dst_batch):
+                    break
+            yield torch.stack(src_batch, dim=0), torch.stack(dst_batch, dim=0)
+
+    def __len__(self):
+        return self.num_iterations

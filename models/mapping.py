@@ -32,8 +32,9 @@ class Mapping(nn.Module):
         return torch.mean(plan * distance)
 
     def save_model(self, save_name):
-        map_save_name = os.path.join(save_name, "map_func.pkl")
+        map_save_name = "{}_mapping.pkl".format(save_name)
         torch.save(self.map_func, map_save_name)
 
-    def load_model(self, map_model):
-        self.map_func = torch.load(map_model)
+    def load_model(self, load_name):
+        map_load_name = "{}_mapping.pkl".format(load_name)
+        self.map_func = torch.load(map_load_name)

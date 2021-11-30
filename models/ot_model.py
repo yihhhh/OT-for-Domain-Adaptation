@@ -7,7 +7,7 @@ class OTPlan(nn.Module):
                  target_dim = None,
                  source_length = None,
                  target_length = None,
-                 alpha = 0.1,
+                 alpha = 100,
                  regularization = 'entropy',
                  device = 'cpu'
                  ):
@@ -52,12 +52,17 @@ class OTPlan(nn.Module):
     def loss(self, x, y, xidx=None, yidx=None):
         K = torch.sqrt(l2_distance(x, y))
         u, v = self._get_uv(x, y, xidx, yidx)
-
         if self.regularization == 'entropy':
             reg = - self.alpha * torch.exp((u[:, None] + v[None, :] - K) / self.alpha)
         else:
             reg = - torch.clamp((u[:, None] + v[None, :] - K),
                                 min=0) ** 2 / 4 / self.alpha
+            # reg = - (u[:, None] + v[None, :] - K) ** 2 / 4 / self.alpha
+        # print("\n =====================")
+        # print("u: \n", u)
+        # print("v: \n", v)
+        # print("reg: \n", u[:, None] + v[None, :] - K)
+        # print("reg+: \n", reg)
         return - torch.mean(u[:, None] + v[None, :] + reg)
 
     def forward(self, x, y, xidx=None, yidx=None):
@@ -70,14 +75,16 @@ class OTPlan(nn.Module):
                                min=0) / (2 * self.alpha)
 
     def save_model(self, save_name):
-        u_save_name = os.path.join(save_name, "u.pkl")
-        v_save_name = os.path.join(save_name, "v.pkl")
+        u_save_name = "{}_u.pkl".format(save_name)
+        v_save_name = "{}_v.pkl".format(save_name)
         torch.save(self.u, u_save_name)
         torch.save(self.v, v_save_name)
 
-    def load_model(self, u_model, v_model):
-        self.u = torch.load(u_model)
-        self.v = torch.load(v_model)
+    def load_model(self, load_name):
+        u_load_name = "{}_u.pkl".format(load_name)
+        v_load_name = "{}_v.pkl".format(load_name)
+        self.u = torch.load(u_load_name)
+        self.v = torch.load(v_load_name)
 
 
 class DiscretePotential(nn.Module):
@@ -95,13 +102,17 @@ class DiscretePotential(nn.Module):
 class ContinuousPotential(nn.Module):
     def __init__(self, dim):
         super().__init__()
-        self.u = nn.Sequential(nn.Linear(dim, 2*dim),
+        self.u = nn.Sequential(nn.Linear(dim, 2 * dim),
                                nn.ReLU(),
-                               nn.Linear(2*dim, 4*dim),
+                               nn.Linear(2 * dim, 4 * dim),
                                nn.ReLU(),
-                               nn.Linear(4*dim, 2*dim),
+                               nn.Linear(4 * dim, 4 * dim),
                                nn.ReLU(),
-                               nn.Linear(2*dim, 1)
+                               nn.Linear(4 * dim, 2 * dim),
+                               nn.ReLU(),
+                               nn.Linear(2 * dim, dim),
+                               nn.ReLU(),
+                               nn.Linear(dim, 1)
                                )
         self.reset_parameters()
 
@@ -111,4 +122,9 @@ class ContinuousPotential(nn.Module):
                 module.reset_parameters()
 
     def forward(self, x):
+        # paras = list(self.parameters())
+        # for num, para in enumerate(paras):
+        #     print('number:', num)
+        #     print(para)
+        #     print('_____________________________')
         return self.u(x)[:, 0]

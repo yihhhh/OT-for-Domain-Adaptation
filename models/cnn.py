@@ -1,7 +1,7 @@
 from . import *
 
 class CNN(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, 1)
         self.conv2 = nn.Conv2d(32, 64, 3, 1)
