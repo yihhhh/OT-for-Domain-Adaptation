@@ -2,22 +2,20 @@ target_dim: 256
 source_dim: 256
 
 ot_plan:
-  epoch: 6000
+  epoch: 10000
   batch_size: 1024
   load_model: False
   load_name: './checkpoints/toy_1130'
   train_model: True
-  save_name: './checkpoints/toy_1130'
 
   lr: 0.000001
-  alpha: 100
+  alpha: 0.00001
   regularization: 'l2'
 
 mapping:
-  epoch: 6000
+  epoch: 10000
   batch_size: 1024
   load_model: False
   load_name: './checkpoints/toy_1130'
   train_model: True
-  save_name: './checkpoints/toy_1130'
-  lr: 0.002
+  lr: 0.0001

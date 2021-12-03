@@ -102,6 +102,9 @@ class DiscretePotential(nn.Module):
 class ContinuousPotential(nn.Module):
     def __init__(self, dim):
         super().__init__()
+        # self.u = nn.Sequential(
+        #     nn.Conv2d(1, 32, 2, 1)
+        # )
         self.u = nn.Sequential(nn.Linear(dim, 2 * dim),
                                nn.ReLU(),
                                nn.Linear(2 * dim, 4 * dim),

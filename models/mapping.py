@@ -1,10 +1,10 @@
 from . import *
 
 class Mapping(nn.Module):
-    def __init__(self, ot_plan, dim):
+    def __init__(self, ot_plan, dim, device):
         super().__init__()
         self.ot_plan = ot_plan
-        self.device = self.ot_plan.device
+        self.device = device
         self.map_func = nn.Sequential(nn.Linear(dim, 2*dim),
                                       nn.ReLU(),
                                       nn.Linear(2*dim, 4*dim),

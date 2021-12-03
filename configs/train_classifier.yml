@@ -1,0 +1,12 @@
+save_ckpt: True
+load_ckpt: False
+#ckpt_pth: './classifier_checkpoints/classifier/wo_mapping_80ep/valid_acc=0.994314.pt'
+ckpt_pth: './classifier_checkpoints/classifier/with_mapping_80ep/valid_acc=0.963879.pt'
+use_map: True
+mapping_ckpt: './mapping_checkpoints/linear+normalize/a=0.001'
+
+lr: 0.002
+n_epoch: 80
+batch_size: 1024
+
+CNN:

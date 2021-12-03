@@ -53,18 +53,29 @@ class IterationBasedBatchSampler:
 
     def __iter__(self):
         for i in range(self.num_iterations):
-            src_batch, dst_batch = [], []
+            src_index, dst_index, src_batch, dst_batch = [], [], [], []
             for s in self.src_batch_sampler:
-                # print("src shape: ", self.src_batch_sampler.data_source[s].shape)
+                # src_index.append(s)
                 src_batch.append(self.src_batch_sampler.data_source[s])
                 if self.batch_size == len(src_batch):
                     break
             for d in self.dst_batch_sampler:
-                # print("dst shape: ", self.dst_batch_sampler.data_source[d].shape)
+                # dst_index.append(d)
                 dst_batch.append(self.dst_batch_sampler.data_source[d])
                 if self.batch_size == len(dst_batch):
                     break
-            yield torch.stack(src_batch, dim=0), torch.stack(dst_batch, dim=0)
+            yield torch.stack(src_batch, dim=0), torch.stack(dst_batch, dim=0), src_index, dst_index
 
     def __len__(self):
         return self.num_iterations
+
+def bin_index(split, vec):
+    bin_index = list(split.keys())
+    bin_range = list(split.values())
+    bin_result = np.zeros(10)
+    for v in vec:
+        for i in range(len(bin_range)):
+            if v in range(bin_range[i][0], bin_range[i][1]):
+                bin_result[eval(bin_index[i])] += 1
+
+    return bin_result
