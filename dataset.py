@@ -21,6 +21,7 @@ class MappingDataset(Dataset):
             std_value = 76.21333201287572
 
         all_data = []
+        all_label = []
         for i in range(10):
             with open(os.path.join(self.root, '{0}_{1}.pkl'.format(file_name, i)), 'rb') as f:
                 data = pickle.load(f)
@@ -28,12 +29,17 @@ class MappingDataset(Dataset):
                     d = d.reshape(-1).astype(float)
                     d = (d - mean_value)/std_value
                     all_data.append(d)
+                    all_label.append(i)
         self.all_data = all_data
+        self.all_label = all_label
 
     def __getitem__(self, item):
         data = self.all_data[item]
         data = torch.FloatTensor(data)
-        return data
+
+        label = self.all_label[item]
+        label = torch.LongTensor([label])
+        return data, label
 
     def __len__(self):
         return len(self.all_data)

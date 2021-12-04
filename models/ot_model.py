@@ -57,12 +57,7 @@ class OTPlan(nn.Module):
         else:
             reg = - torch.clamp((u[:, None] + v[None, :] - K),
                                 min=0) ** 2 / 4 / self.alpha
-            # reg = - (u[:, None] + v[None, :] - K) ** 2 / 4 / self.alpha
-        # print("\n =====================")
-        # print("u: \n", u)
-        # print("v: \n", v)
-        # print("reg: \n", u[:, None] + v[None, :] - K)
-        # print("reg+: \n", reg)
+
         return - torch.mean(u[:, None] + v[None, :] + reg)
 
     def forward(self, x, y, xidx=None, yidx=None):

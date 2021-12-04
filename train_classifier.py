@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 
 import utils
 from models.cnn import CNN
+from models.mlp import MLP
 from dataset import ClassificationDataset
 from models.mapping import Mapping
 
@@ -20,7 +21,7 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
     print("Reading configurations ...")
     utils.wandb_init("11785-project", group_id, exp_id)
     args = utils.load_config(os.path.join('./configs', '{}.yml'.format(config_file)))
-    nn_args = args.CNN
+    nn_args = args.NN
     print(exp_id)
     save_dir = './classifier_checkpoints/{0}/{1}'.format(group_id, exp_id)
     if args.save_ckpt:

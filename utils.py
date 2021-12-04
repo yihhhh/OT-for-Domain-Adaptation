@@ -53,18 +53,20 @@ class IterationBasedBatchSampler:
 
     def __iter__(self):
         for i in range(self.num_iterations):
-            src_index, dst_index, src_batch, dst_batch = [], [], [], []
+            src_label, dst_label, src_batch, dst_batch = [], [], [], []
             for s in self.src_batch_sampler:
                 # src_index.append(s)
-                src_batch.append(self.src_batch_sampler.data_source[s])
+                src_batch.append(self.src_batch_sampler.data_source[s][0])
+                src_label.append(self.src_batch_sampler.data_source[s][1])
                 if self.batch_size == len(src_batch):
                     break
             for d in self.dst_batch_sampler:
                 # dst_index.append(d)
-                dst_batch.append(self.dst_batch_sampler.data_source[d])
+                dst_batch.append(self.dst_batch_sampler.data_source[d][0])
+                dst_label.append(self.dst_batch_sampler.data_source[d][1])
                 if self.batch_size == len(dst_batch):
                     break
-            yield torch.stack(src_batch, dim=0), torch.stack(dst_batch, dim=0), src_index, dst_index
+            yield torch.stack(src_batch, dim=0), torch.stack(dst_batch, dim=0), torch.stack(src_label, dim=0), torch.stack(dst_label, dim=0)
 
     def __len__(self):
         return self.num_iterations

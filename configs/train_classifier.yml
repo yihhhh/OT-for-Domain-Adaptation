@@ -2,11 +2,15 @@ save_ckpt: True
 load_ckpt: False
 #ckpt_pth: './classifier_checkpoints/classifier/wo_mapping_80ep/valid_acc=0.994314.pt'
 ckpt_pth: './classifier_checkpoints/classifier/with_mapping_80ep/valid_acc=0.963879.pt'
-use_map: True
-mapping_ckpt: './mapping_checkpoints/linear+normalize/a=0.001'
+use_map: False
+mapping_ckpt: './mapping_checkpoints/linear+normalize/a=0.000001'
 
 lr: 0.002
 n_epoch: 80
 batch_size: 1024
 
-CNN:
+NN:
+  in_dim: 256
+  out_dim: 10
+  hidden_dim: [512, 256]
+  dropout_rate: 0.2
