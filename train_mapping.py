@@ -38,12 +38,12 @@ def cli_main(config_file='config', group_id='group', exp_id='exp', mode='formal'
     ot_planner = OTPlan(source_type='continuous', target_type='continuous',
                         target_dim=args.target_dim, source_dim=args.source_dim,
                         regularization=ot_args.regularization, alpha=ot_args.alpha,
-                        device=device)
+                        hiddens=ot_args.hidden_size, device=device)
     if ot_args.load_model:
         ot_planner.load_model(ot_args.load_name)
     if ot_args.train_model:
         ot_optimizer = Adam(ot_planner.parameters(), amsgrad=True, lr=ot_args.lr)
-        ot_lr_scheduler = StepLR(ot_optimizer, step_size=1000, gamma=0.1)
+        ot_lr_scheduler = StepLR(ot_optimizer, step_size=ot_args.step_size, gamma=0.1)
         train_ot_plan(src_split, dst_split, ot_args, ot_src_sampler, ot_dst_sampler, ot_planner, ot_optimizer, ot_lr_scheduler, device=device)
         ot_planner.save_model(save_dir)
 
@@ -52,8 +52,8 @@ def cli_main(config_file='config', group_id='group', exp_id='exp', mode='formal'
         mapping.load_model(map_args.load_name)
     if map_args.train_model:
         map_optimizer = Adam(mapping.parameters(), amsgrad=True, lr=map_args.lr)
-        map_lr_scheduler = StepLR(map_optimizer, step_size=1000, gamma=0.1)
-        train_mapping(map_args, map_src_sampler, map_dst_sampler, mapping, map_optimizer, map_lr_scheduler, device=device)
+        map_lr_scheduler = StepLR(map_optimizer, step_size=map_args.step_size, gamma=0.1)
+        train_mapping(map_args, map_src_sampler, map_dst_sampler, mapping, map_optimizer, map_lr_scheduler, hiddens=map_args.hidden_size, device=device)
         mapping.save_model(save_dir)
 
     print('Train finished!')

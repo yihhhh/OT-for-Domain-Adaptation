@@ -10,11 +10,12 @@ ot_plan:
 
   lr: 0.02
   step_size: 100
-  alpha: 5
-  regularization: 'entropy'
+  alpha: 0.001
+  regularization: 'l2'
+  hidden_size: [512]
 
 mapping:
-  epoch: 6000
+  epoch: 600
   batch_size: 1024
   load_model: False
   load_name: './checkpoints/toy_1130'
@@ -22,3 +23,4 @@ mapping:
 
   lr: 0.02
   step_size: 100
+  hidden_size: [512, 1024, 1024, 512]

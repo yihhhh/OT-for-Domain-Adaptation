@@ -9,7 +9,8 @@ class OTPlan(nn.Module):
                  target_length = None,
                  alpha = 100,
                  regularization = 'entropy',
-                 device = 'cpu'
+                 device = 'cpu',
+                 hiddens = [512]
                  ):
         super().__init__()
         self.source_type = source_type
@@ -20,14 +21,14 @@ class OTPlan(nn.Module):
             self.u = DiscretePotential(source_length).to(device)
         elif source_type == 'continuous':
             assert isinstance(source_dim, int)
-            self.u = ContinuousPotential(source_dim).to(device)
+            self.u = ContinuousPotential(source_dim, hiddens).to(device)
         self.target_type = target_type
         if target_type == 'discrete':
             assert isinstance(target_length, int)
             self.v = DiscretePotential(target_length).to(device)
         elif target_type == 'continuous':
             assert isinstance(target_dim, int)
-            self.v = ContinuousPotential(target_dim).to(device)
+            self.v = ContinuousPotential(target_dim, hiddens).to(device)
         self.alpha = alpha
 
         assert regularization in ['entropy', 'l2'], ValueError
@@ -70,14 +71,14 @@ class OTPlan(nn.Module):
                                min=0) / (2 * self.alpha)
 
     def save_model(self, save_name):
-        u_save_name = "{}_u.pkl".format(save_name)
-        v_save_name = "{}_v.pkl".format(save_name)
+        u_save_name = os.path.join(save_name, "u.pkl")
+        v_save_name = os.path.join(save_name, "v.pkl")
         torch.save(self.u, u_save_name)
         torch.save(self.v, v_save_name)
 
     def load_model(self, load_name):
-        u_load_name = "{}_u.pkl".format(load_name)
-        v_load_name = "{}_v.pkl".format(load_name)
+        u_load_name = os.path.join(load_name, "u.pkl")
+        v_load_name = os.path.join(load_name, "v.pkl")
         self.u = torch.load(u_load_name)
         self.v = torch.load(v_load_name)
 
@@ -95,23 +96,15 @@ class DiscretePotential(nn.Module):
         return self.u[idx]
 
 class ContinuousPotential(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, hidden_size):
         super().__init__()
-        # self.u = nn.Sequential(
-        #     nn.Conv2d(1, 32, 2, 1)
-        # )
-        self.u = nn.Sequential(nn.Linear(dim, 2 * dim),
-                               nn.ReLU(),
-                               nn.Linear(2 * dim, 4 * dim),
-                               nn.ReLU(),
-                               nn.Linear(4 * dim, 4 * dim),
-                               nn.ReLU(),
-                               nn.Linear(4 * dim, 2 * dim),
-                               nn.ReLU(),
-                               nn.Linear(2 * dim, dim),
-                               nn.ReLU(),
-                               nn.Linear(dim, 1)
-                               )
+        self.hidden_size = [dim] + hidden_size
+        layers = []
+        for i in range(len(self.hidden_size) - 1):
+            layers.append(nn.Linear(self.hidden_size[i], self.hidden_size[i + 1]))
+            layers.append(nn.ReLU())
+        layers.append(nn.Linear(self.hidden_size[-1], 1))
+        self.u = torch.nn.Sequential(*layers)
         self.reset_parameters()
 
     def reset_parameters(self):
