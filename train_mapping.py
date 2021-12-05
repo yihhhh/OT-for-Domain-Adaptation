@@ -47,13 +47,13 @@ def cli_main(config_file='config', group_id='group', exp_id='exp', mode='formal'
         train_ot_plan(src_split, dst_split, ot_args, ot_src_sampler, ot_dst_sampler, ot_planner, ot_optimizer, ot_lr_scheduler, device=device)
         ot_planner.save_model(save_dir)
 
-    mapping = Mapping(ot_planner, dim=args.target_dim, device=device)
+    mapping = Mapping(ot_planner, dim=args.target_dim, hidden_size=map_args.hidden_size, device=device)
     if map_args.load_model:
         mapping.load_model(map_args.load_name)
     if map_args.train_model:
         map_optimizer = Adam(mapping.parameters(), amsgrad=True, lr=map_args.lr)
         map_lr_scheduler = StepLR(map_optimizer, step_size=map_args.step_size, gamma=0.1)
-        train_mapping(map_args, map_src_sampler, map_dst_sampler, mapping, map_optimizer, map_lr_scheduler, hiddens=map_args.hidden_size, device=device)
+        train_mapping(map_args, map_src_sampler, map_dst_sampler, mapping, map_optimizer, map_lr_scheduler, device=device)
         mapping.save_model(save_dir)
 
     print('Train finished!')
