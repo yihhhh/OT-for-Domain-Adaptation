@@ -1,0 +1,26 @@
+target_dim: 256
+source_dim: 256
+
+ot_plan:
+  epoch: 600
+  batch_size: 1024
+  load_model: False
+  load_name: './mapping_checkpoints/entropy/a=100'
+  train_model: True
+
+  lr: 0.00002
+  step_size: 100
+  alpha: 0.0004
+  regularization: 'l2'
+  hidden_size: [512, 1024, 2048, 1024, 512]
+
+mapping:
+  epoch: 600
+  batch_size: 1024
+  load_model: False
+  load_name: './checkpoints/toy_1130'
+  train_model: True
+
+  lr: 0.0002
+  step_size: 100
+  hidden_size: [512, 1024, 512]

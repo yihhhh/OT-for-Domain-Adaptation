@@ -12,9 +12,10 @@ import torch
 def wandb_init(project_name, group_id, exp_id):
     wandb.init(project=project_name, entity='yihan', group=group_id, name=exp_id)
 
-def load_config(config_path="config.yml"):
-    if os.path.isfile(config_path):
-        f = open(config_path)
+def load_config(config):
+    config_file = "./configs/" + config + ".yml"
+    if os.path.isfile(config_file):
+        f = open(config_file)
         dict = yaml.load(f, Loader=yaml.FullLoader)
         try:
             wandb.config.update(dict)
@@ -22,7 +23,7 @@ def load_config(config_path="config.yml"):
             print("wandb not initiated.")
         return EasyDict(dict)
     else:
-        raise Exception("Configuration file is not found in the path: "+config_path)
+        raise Exception("Configuration file is not found in the path: "+config_file)
 
 def save_ckpt(model, ckpt_pth):
     torch.save(model.state_dict(), ckpt_pth)

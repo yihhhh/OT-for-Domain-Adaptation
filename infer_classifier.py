@@ -6,11 +6,10 @@ import wandb
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader
 
 import utils
-from models.cnn import CNN
+from models.cnn import CNN, FeatureLayer
 from dataset import ClassificationDataset
 from models.mapping import Mapping
 
@@ -18,8 +17,7 @@ from models.mapping import Mapping
 def cli_main(config_file='config'):
 
     print("Reading configurations ...")
-    args = utils.load_config(os.path.join('./configs', '{}.yml'.format(config_file)))
-    nn_args = args.CNN
+    args = utils.load_config(config_file)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -28,7 +26,8 @@ def cli_main(config_file='config'):
     test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
 
     print("Initializing NN ...")
-    model = CNN(nn_args).to(device)
+    feature_nn = FeatureLayer().to(device)
+    model = CNN(feature_nn).to(device)
 
     print("Loading checkpoint file: {} ...".format(args.ckpt_pth))
     utils.load_ckpt(model, args.ckpt_pth)

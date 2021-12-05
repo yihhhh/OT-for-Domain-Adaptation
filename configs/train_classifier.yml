@@ -2,15 +2,11 @@ save_ckpt: True
 load_ckpt: False
 #ckpt_pth: './classifier_checkpoints/classifier/wo_mapping_80ep/valid_acc=0.994314.pt'
 ckpt_pth: './classifier_checkpoints/classifier/with_mapping_80ep/valid_acc=0.963879.pt'
-use_map: False
-mapping_ckpt: './mapping_checkpoints/linear+normalize/a=0.000001'
+mapping_ckpt: './mapping_checkpoints/map_layer/n_layer=3'
+pretrain: True
+#pretrain_model: './classifier_checkpoints/pretrain/use_map/valid_acc=0.955963.pt'
+pretrain_model: './classifier_checkpoints/pretrain/wo_map/valid_acc=0.993923.pt'
 
 lr: 0.002
-n_epoch: 80
+n_epoch: 50
 batch_size: 1024
-
-NN:
-  in_dim: 256
-  out_dim: 10
-  hidden_dim: [512, 256]
-  dropout_rate: 0.2

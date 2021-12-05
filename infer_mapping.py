@@ -15,49 +15,53 @@ from dataset import MappingDataset
 from models.ot_model import OTPlan
 from models.mapping import Mapping
 
-def cli_main(config_file='config', group_id='group', exp_id='exp', mode='formal'):
+def cli_main(group_id='group', exp_id='exp'):
     print("Reading configurations ...")
-    # utils.wandb_init("11785-project", group_id, exp_id)
-    args = utils.load_config(os.path.join('./configs', '{}.yml'.format(config_file)))
-    ot_args = args.ot_plan
-    map_args = args.mapping
-    save_dir = os.path.join('./mapping_checkpoints', group_id, exp_id)
+    save_dir = os.path.join('./exp/mapping_checkpoints', group_id, exp_id)
     print(group_id, exp_id)
 
-    # device = torch.device('cpu')
+    fig_dir = './figs/{0}-{1}'.format(group_id, exp_id)
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("Loading data ...")
     src_dataset = MappingDataset('./dataset/mapping', 'mnist')
     dst_dataset = MappingDataset('./dataset/mapping', 'usps')
-    src_split = np.load('./dataset/label_split_mnist.npy', allow_pickle=True).item()
-    dst_split = np.load('./dataset/label_split_usps.npy', allow_pickle=True).item()
+    # src_split = np.load('./dataset/mapping/label_split_mnist.npy', allow_pickle=True).item()
+    # dst_split = np.load('./dataset/mapping/label_split_usps.npy', allow_pickle=True).item()
+    # print(src_split)
+    # print(dst_split)
 
     ot_planner = OTPlan(source_type='continuous', target_type='continuous',
-                        target_dim=args.target_dim, source_dim=args.source_dim,
-                        regularization=ot_args.regularization, alpha=ot_args.alpha,
+                        target_dim=256, source_dim=256,
+                        regularization='l2', alpha=0.0006,
                         device=device)
     ot_planner.load_model(save_dir)
 
-    mapping = Mapping(ot_planner, dim=args.target_dim, device=device)
+    mapping = Mapping(ot_planner, dim=256, hidden_size=[], device=device)
     mapping.load_model(save_dir)
 
     compute_sim = torch.nn.CosineSimilarity(dim=1)
-    all_batch_src_data, all_batch_dst_data = [], []
+    all_batch_src_data = torch.load("./dataset/mapping/all_batched_src_data.pt")
+    all_batch_dst_data = torch.load("./dataset/mapping/all_batched_dst_data.pt")
     all_mapped_sim, all_sim = [], []
     for i in range(10):
         print(i)
-        src_idx_range = src_split[str(i)]
-        dst_idx_range = dst_split[str(i)]
-        batch_src_data, batch_dst_data = [], []
-        for j in range(src_idx_range[0], src_idx_range[1]):
-            batch_src_data.append(src_dataset[j])
-        for j in range(dst_idx_range[0], dst_idx_range[1]):
-            batch_dst_data.append(dst_dataset[j])
-        batch_src_data = torch.stack(batch_src_data, dim=0)
-        batch_dst_data = torch.stack(batch_dst_data, dim=0)
-        all_batch_src_data.append(batch_src_data)
-        all_batch_dst_data.append(batch_dst_data)
+        # src_idx_range = src_split[str(i)]
+        # dst_idx_range = dst_split[str(i)]
+        # batch_src_data, batch_dst_data = [], []
+        # for j in range(src_idx_range[0], src_idx_range[1]):
+        #     batch_src_data.append(src_dataset[j][0])
+        # for j in range(dst_idx_range[0], dst_idx_range[1]):
+        #     batch_dst_data.append(dst_dataset[j][0])
+        # batch_src_data = torch.stack(batch_src_data, dim=0)
+        # batch_dst_data = torch.stack(batch_dst_data, dim=0)
+        # all_batch_src_data.append(batch_src_data)
+        # all_batch_dst_data.append(batch_dst_data)
+        batch_src_data = all_batch_src_data[i]
+        batch_dst_data = all_batch_dst_data[i]
 
         mapped_src_data = mapping(batch_src_data.to(device))
 
@@ -73,42 +77,56 @@ def cli_main(config_file='config', group_id='group', exp_id='exp', mode='formal'
         plt.figure()
         plt.subplot(1, 3, 1)
         plt.imshow(mean_batch_src_data.reshape(16, 16))
-        plt.title('source mean\ncos similarity={:.2f}'.format(sim))
+        plt.axis('off')
+        # plt.title('source mean\ncos similarity={:.2f}'.format(sim))
 
         plt.subplot(1, 3, 2)
         plt.imshow(mean_mapped_src_data.reshape(16, 16))
-        plt.title('mapped source mean\ncos similarity={:.2f}'.format(mapped_sim))
+        plt.axis('off')
+        # plt.title('mapped source mean\ncos similarity={:.2f}'.format(mapped_sim))
 
         plt.subplot(1, 3, 3)
         plt.imshow(mean_batch_dst_data.reshape(16, 16))
-        plt.title('target mean')
+        plt.axis('off')
+        # plt.title('target mean')
 
-        plt.savefig('./figs/mapping_{}.png'.format(i))
+        plt.tight_layout()
+        plt.savefig('./figs/{0}-{1}/mapping_{2}.png'.format(group_id, exp_id, i))
         plt.clf()
 
-    path = "./figs/cos_sim.csv"
+    path = "./figs/cos_sim+.csv"
+    if not os.path.isfile(path):
+        with open(path, 'a+') as f:
+            csv_write = csv.writer(f)
+            data_row = ['group_id', 'exp_id'] + [str(i) for i in range(10)]
+            csv_write.writerow(data_row)
     with open(path, 'a+') as f:
         csv_write = csv.writer(f)
         data_row = [group_id, exp_id] + all_mapped_sim
         csv_write.writerow(data_row)
 
+    # all_plan = []
     # for i in range(10):
+    #     single_src_plan = []
     #     for j in range(10):
     #         plan = ot_planner(all_batch_src_data[i].to(device), all_batch_dst_data[j].to(device))
-    #         plan = plan.detach().cpu().numpy()
-    #         np.save('./figs/ot_plan_{0}-{1}.npy'.format(i, j), plan)
-        #     plt.subplot(2, 5, j+1)
-        #     sns_plot = sns.heatmap(plan)
-        #     plt.title("{0}-{1}".format(i, j))
-        # plt.savefig('./figs/ot_plan_{0}-{1}.png'.format(i, j))
+    #         single_src_plan.append(plan.detach().cpu().numpy())
+    #     single_src_plan = np.concatenate(single_src_plan, axis=1)
+    #     all_plan.append(single_src_plan)
+    # all_plan_np = np.concatenate(all_plan, axis=0)
+    # # np.save('./figs/{0}-{1}/ot_plan.npy'.format(group_id, exp_id), all_plan_np)
+    # sns_plot = sns.heatmap(all_plan_np)
+    # plt.xlabel('Dataset: USPS')
+    # plt.ylabel('Dataset: MNIST')
+    # plt.savefig('./figs/{0}-{1}/ot_plan.png'.format(group_id, exp_id))
 
-    print('Train finished!')
+    # torch.save(all_batch_src_data, "./dataset/mapping/all_batched_src_data.pt")
+    # torch.save(all_batch_dst_data, "./dataset/mapping/all_batched_dst_data.pt")
+    print('Finished!')
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--config', type=str, default='config')
     parser.add_argument('--group_id', type=str, default='trial')
     parser.add_argument('--exp_id', type=str, default='trial')
-    parser.add_argument('--mode', type=str, default='formal')
     args = parser.parse_args()
-    cli_main(args.config, args.group_id, args.exp_id, args.mode)
+    cli_main(args.group_id, args.exp_id)

@@ -7,6 +7,22 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 
+class NumericalDataset(Dataset):
+    def __init__(self, data, label):
+        self.all_data = data
+        self.all_label = label
+
+    def __getitem__(self, item):
+        data = self.all_data[item, :]
+        data = torch.FloatTensor(data)
+
+        label = self.all_label[item]
+        label = torch.LongTensor([label])
+        return data, label
+
+    def __len__(self):
+        return self.all_data.shape[0]
+
 class MappingDataset(Dataset):
     def __init__(self, root_dir="./dataset", dataset_name='mnist'):
         self.root = root_dir

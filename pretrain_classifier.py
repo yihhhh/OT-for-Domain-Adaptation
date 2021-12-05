@@ -33,16 +33,18 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
 
     print("Initializing NN ...")
     feature_nn = FeatureLayer().to(device)
-
-    if args.pretrain:
-        utils.load_ckpt(feature_nn, args.pretrain_model)
-        feature_nn.eval()
-
     model = CNN(feature_nn).to(device)
+
     if args.load_ckpt:
         print("Loading checkpoint file: {} ...".format(args.ckpt_pth))
         utils.load_ckpt(model, args.ckpt_pth)
         model.eval()
+
+    mapping_func = None
+    if args.use_map:
+        mapping_func = Mapping(ot_plan=None, dim=16, hidden_size=[512, 1024, 512], device=device)
+        mapping_func.load_model(args.mapping_ckpt)
+
 
     loss_fn = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=5e-4)
@@ -54,8 +56,8 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
     train_loss_lst, train_acc_lst, valid_loss_lst, valid_acc_lst = [], [], [], []
     for i in range(args.n_epoch):
 
-        trainset_loss, trainset_acc = train(model, loss_fn, optimizer, train_loader, device)
-        validset_loss, validset_acc = inference(model, loss_fn, valid_loader, device)
+        trainset_loss, trainset_acc = train(model, loss_fn, optimizer, train_loader, device, map=args.use_map, mapping_func=mapping_func)
+        validset_loss, validset_acc = inference(model, loss_fn, valid_loader, device, map=args.use_map, mapping_func=mapping_func)
         wandb.log({"train loss per epoch": trainset_loss, "train acc per epoch": trainset_acc})
         wandb.log({"valid loss per epoch": validset_loss, "valid acc per epoch": validset_acc})
 
@@ -70,7 +72,7 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
             best_valid_acc = validset_acc
             if args.save_ckpt:
                 save_file = os.path.join(save_dir, 'valid_acc=' + '{}.pt'.format(round(validset_acc, 6)))
-                utils.save_ckpt(model, save_file)
+                utils.save_ckpt(model.feature_emb, save_file)
 
         print("Epoch {0}/{1} -- lr : {5}\ntrain loss: {2}, valid loss: {3}, best valid loss: {4}".format(i+1, args.n_epoch, trainset_loss, validset_loss, best_valid_loss, optimizer.param_groups[0]['lr']))
         print("train acc: {2}, valid acc: {3}, best valid acc: {4}".format(i+1, args.n_epoch, trainset_acc, validset_acc, best_valid_acc))
@@ -79,16 +81,16 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
 
 
 def load_data(args):
-    train_set = ClassificationDataset(root_dir='./dataset', dataset_name='usps', split='train')
+    train_set = ClassificationDataset(root_dir='./dataset', dataset_name='mnist', split='train')
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 
-    valid_set = ClassificationDataset(root_dir='./dataset', dataset_name='usps', split='test')
+    valid_set = ClassificationDataset(root_dir='./dataset', dataset_name='mnist', split='test')
     valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
 
     return train_loader, valid_loader
 
 
-def train(model, loss_fn, optimizer, training_data, device):
+def train(model, loss_fn, optimizer, training_data, device, map=False, mapping_func=None):
     model.train()
 
     train_loss = 0
@@ -97,6 +99,13 @@ def train(model, loss_fn, optimizer, training_data, device):
     with tqdm(enumerate(training_data)) as t:
         for i, (x, y) in t:
             x, y = x.to(device).unsqueeze(1), y.to(device)
+            data_shape = x.shape
+
+            if map and mapping_func is not None:
+                x_src = x.reshape(data_shape[0], -1)
+                x_dst = mapping_func(x_src.to(device)).detach()
+                x = x_dst.reshape(data_shape)
+
             optimizer.zero_grad()
             output = model(x)
             loss = loss_fn(output, y.view(-1))
@@ -117,7 +126,7 @@ def train(model, loss_fn, optimizer, training_data, device):
     return train_loss / len(training_data), train_acc / len(training_data)
 
 
-def inference(model, loss_fn, testing_data, device):
+def inference(model, loss_fn, testing_data, device, map=False, mapping_func=None):
     model.eval()
 
     infer_loss = 0
@@ -125,6 +134,13 @@ def inference(model, loss_fn, testing_data, device):
 
     for i, (x, y) in enumerate(testing_data):
         x, y = x.to(device).unsqueeze(1), y.to(device)
+        data_shape = x.shape
+
+        if map and mapping_func is not None:
+            x_src = x.reshape(data_shape[0], -1)
+            x_dst = mapping_func(x_src.to(device)).detach()
+            x = x_dst.reshape(data_shape)
+
         with torch.no_grad():
             output = model(x)
             loss = loss_fn(output, y.view(-1))

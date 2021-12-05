@@ -1,5 +1,6 @@
 import os
 import csv
+import numpy as np
 from argparse import ArgumentParser
 import pickle
 
@@ -7,6 +8,7 @@ import torch
 from sklearn.neighbors import KNeighborsClassifier
 
 from models.mapping import Mapping
+from models.ot_model import OTPlan
 import utils
 
 
@@ -31,12 +33,17 @@ def cli_main(record=False, map=False, group_id='', exp_id='', config=''):
         print("trained without mapping -- valid acc: {0}, test acc: {1}".format(valid_acc, test_acc))
 
     if map:
-        args = utils.load_config(os.path.join('./configs', '{}.yml'.format(config)))
+        args = utils.load_config(config)
         map_args = args.mapping
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        mapping = Mapping(ot_plan=None, dim=16, hidden_size=map_args.hidden_size, device=device)
-        mapping.load_model(os.path.join('./mapping_checkpoints', group_id, exp_id))
+        ot_planner = OTPlan(source_type='continuous', target_type='continuous',
+                            target_dim=256, source_dim=256,
+                            regularization='l2', alpha=0.0006,
+                            device=device)
+        ot_planner.load_model(os.path.join('./exp/mapping_checkpoints', group_id, exp_id))
+        mapping = Mapping(ot_plan=ot_planner, dim=16, hidden_size=map_args.hidden_size, device=device)
+        mapping.load_model(os.path.join('./exp/mapping_checkpoints', group_id, exp_id))
         mapped_train_data = mapping(torch.FloatTensor(train_data).to(device))
         mapped_train_data = mapped_train_data.detach().cpu().numpy()
 
@@ -54,11 +61,26 @@ def cli_main(record=False, map=False, group_id='', exp_id='', config=''):
         test_acc = (test_pred.reshape(-1) == test_label.reshape(-1)).sum() / test_pred.shape[0]
         print("trained with mapping -- valid acc: {0}, test acc: {1}".format(valid_acc, test_acc))
 
+        test_acc_digits = []
+        for i in range(10):
+            idx = np.where(test_label == i)[0]
+            test_label_selected = test_label[idx]
+            test_data_selected = test_data[idx, :]
+            test_pred_selected = knn_with_mapping.predict(test_data_selected)
+            test_acc_digits.append((test_pred_selected.reshape(-1) == test_label_selected.reshape(-1)).sum() / test_label_selected.shape[0])
+        print(test_acc_digits)
+
+
     if record:
-        file_path = "./figs/knn.csv"
+        file_path = "./figs/knn_exp+.csv"
+        if not os.path.isfile(file_path):
+            with open(file_path, 'a+') as f:
+                csv_write = csv.writer(f)
+                data_row = ['map', 'group_id', 'exp_id', 'valid_acc', 'test_acc'] + [str(i) for i in range(10)]
+                csv_write.writerow(data_row)
         with open(file_path, 'a+') as f:
             csv_write = csv.writer(f)
-            data_row = [map, group_id, exp_id] + [valid_acc, test_acc]
+            data_row = [map, group_id, exp_id] + [valid_acc, test_acc] + test_acc_digits
             csv_write.writerow(data_row)
 
     print("Finished!")
