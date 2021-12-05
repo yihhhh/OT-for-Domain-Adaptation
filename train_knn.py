@@ -7,9 +7,10 @@ import torch
 from sklearn.neighbors import KNeighborsClassifier
 
 from models.mapping import Mapping
+import utils
 
 
-def cli_main(record=False, map=False, group_id='', exp_id=''):
+def cli_main(record=False, map=False, group_id='', exp_id='', config=''):
     print("Loading data ...")
     train_data, train_label = load_data(root_dir='./dataset', dataset_name='mnist', split='train')
 
@@ -30,10 +31,12 @@ def cli_main(record=False, map=False, group_id='', exp_id=''):
         print("trained without mapping -- valid acc: {0}, test acc: {1}".format(valid_acc, test_acc))
 
     if map:
+        args = utils.load_config(os.path.join('./configs', '{}.yml'.format(config)))
+        map_args = args.mapping
+
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        mapping = Mapping(ot_plan=None, dim=16, device=device)
+        mapping = Mapping(ot_plan=None, dim=16, hidden_size=map_args.hidden_size, device=device)
         mapping.load_model(os.path.join('./mapping_checkpoints', group_id, exp_id))
-        # mapping.load_model('./mapping_checkpoints/entropy/a=5')
         mapped_train_data = mapping(torch.FloatTensor(train_data).to(device))
         mapped_train_data = mapped_train_data.detach().cpu().numpy()
 
@@ -88,5 +91,6 @@ if __name__ == '__main__':
     parser.add_argument('--record', action='store_true', default=False)
     parser.add_argument('--group_id', type=str, default='')
     parser.add_argument('--exp_id', type=str, default='')
+    parser.add_argument('--config', type=str, default='')
     args = parser.parse_args()
-    cli_main(record=args.record, map=args.map, group_id=args.group_id, exp_id=args.exp_id)
+    cli_main(record=args.record, map=args.map, group_id=args.group_id, exp_id=args.exp_id, config=args.config)
