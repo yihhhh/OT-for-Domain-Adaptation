@@ -2,7 +2,6 @@ import numpy as np
 import os
 from argparse import ArgumentParser
 from tqdm import tqdm
-import wandb
 
 import torch
 import torch.nn as nn
@@ -18,7 +17,6 @@ from models.mapping import Mapping
 def cli_main(config_file='config', group_id='group', exp_id='exp'):
 
     print("Reading configurations ...")
-    utils.wandb_init("11785-project", group_id, exp_id)
     args = utils.load_config(config_file)
     print(exp_id)
     save_dir = './classifier_checkpoints/{0}/{1}'.format(group_id, exp_id)
@@ -58,8 +56,6 @@ def cli_main(config_file='config', group_id='group', exp_id='exp'):
 
         trainset_loss, trainset_acc = train(model, loss_fn, optimizer, train_loader, device, map=args.use_map, mapping_func=mapping_func)
         validset_loss, validset_acc = inference(model, loss_fn, valid_loader, device, map=args.use_map, mapping_func=mapping_func)
-        wandb.log({"train loss per epoch": trainset_loss, "train acc per epoch": trainset_acc})
-        wandb.log({"valid loss per epoch": validset_loss, "valid acc per epoch": validset_acc})
 
         lr_scheduler.step(-validset_acc)
 
@@ -120,8 +116,6 @@ def train(model, loss_fn, optimizer, training_data, device, map=False, mapping_f
 
             t.set_description("train")
             t.set_postfix(loss=cur_loss, acc=cur_acc, lr=optimizer.param_groups[0]['lr'])
-
-            wandb.log({"train loss": cur_loss, "train acc": cur_acc})
 
     return train_loss / len(training_data), train_acc / len(training_data)
 

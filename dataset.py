@@ -84,7 +84,6 @@ class ClassificationDataset(Dataset):
 
         self.data = data
         self.labels = labels
-        # print(data.shape, labels.shape)
 
     def __getitem__(self, item):
         data = torch.FloatTensor(self.data[item, :, :])

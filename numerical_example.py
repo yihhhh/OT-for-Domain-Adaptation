@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from argparse import ArgumentParser
 
 import torch
 from torch.utils.data import RandomSampler
@@ -12,11 +13,10 @@ from dataset import NumericalDataset
 from models.ot_model import OTPlan
 from models.mapping import Mapping
 
-def cli_main():
+def cli_main(type='moon'):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Loading data ...")
-    # src_data, dst_data, src_label, dst_label = generate_data('moon', 1000, 0.1, 0.5)
-    src_data, dst_data, src_label, dst_label = generate_data('circle', 1000, 0.1, 0.5)
+    src_data, dst_data, src_label, dst_label = generate_data(type, 1000, 0.1, 0.5)
     ot_src_sampler, ot_dst_sampler = load_data(src_data, dst_data, src_label, dst_label)
     map_src_sampler, map_dst_sampler = load_data(src_data, dst_data, src_label, dst_label)
 
@@ -42,7 +42,7 @@ def cli_main():
     plt.xlabel('x')
     plt.ylabel('y')
     plt.legend()
-    plt.savefig('./figs/double_circle_mapping.png')
+    plt.savefig('./figs/double_{}_mapping.png'.format(type))
 
 
 def generate_data(type, n_samples, noise, factor=0.5):
@@ -104,4 +104,7 @@ def train_mapping(source_sampler, target_sampler, mapping, optimizer, device):
             t.set_postfix(loss=loss_log, lr=optimizer.param_groups[0]['lr'])
 
 if __name__ == '__main__':
-    cli_main()
+    parser = ArgumentParser()
+    parser.add_argument('--type', type=str, default='moon')
+    args = parser.parse_args()
+    cli_main(args.type)

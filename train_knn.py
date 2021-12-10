@@ -15,9 +15,7 @@ import utils
 def cli_main(record=False, map=False, group_id='', exp_id='', config=''):
     print("Loading data ...")
     train_data, train_label = load_data(root_dir='./dataset', dataset_name='mnist', split='train')
-
     valid_data, valid_label = load_data(root_dir='./dataset', dataset_name='mnist', split='test')
-
     test_data, test_label = load_data(root_dir='./dataset', dataset_name='usps', split='test')
 
     if not map:
@@ -70,9 +68,8 @@ def cli_main(record=False, map=False, group_id='', exp_id='', config=''):
             test_acc_digits.append((test_pred_selected.reshape(-1) == test_label_selected.reshape(-1)).sum() / test_label_selected.shape[0])
         print(test_acc_digits)
 
-
     if record:
-        file_path = "./figs/knn_exp+.csv"
+        file_path = "./figs/knn_exp.csv"
         if not os.path.isfile(file_path):
             with open(file_path, 'a+') as f:
                 csv_write = csv.writer(f)

@@ -1,26 +1,15 @@
 import numpy as np
 import os
-import sys
 import yaml
-import csv
 from easydict import EasyDict
-import wandb
 
 import torch
-
-
-def wandb_init(project_name, group_id, exp_id):
-    wandb.init(project=project_name, entity='yihan', group=group_id, name=exp_id)
 
 def load_config(config):
     config_file = "./configs/" + config + ".yml"
     if os.path.isfile(config_file):
         f = open(config_file)
         dict = yaml.load(f, Loader=yaml.FullLoader)
-        try:
-            wandb.config.update(dict)
-        except:
-            print("wandb not initiated.")
         return EasyDict(dict)
     else:
         raise Exception("Configuration file is not found in the path: "+config_file)
@@ -56,13 +45,11 @@ class IterationBasedBatchSampler:
         for i in range(self.num_iterations):
             src_label, dst_label, src_batch, dst_batch = [], [], [], []
             for s in self.src_batch_sampler:
-                # src_index.append(s)
                 src_batch.append(self.src_batch_sampler.data_source[s][0])
                 src_label.append(self.src_batch_sampler.data_source[s][1])
                 if self.batch_size == len(src_batch):
                     break
             for d in self.dst_batch_sampler:
-                # dst_index.append(d)
                 dst_batch.append(self.dst_batch_sampler.data_source[d][0])
                 dst_label.append(self.dst_batch_sampler.data_source[d][1])
                 if self.batch_size == len(dst_batch):

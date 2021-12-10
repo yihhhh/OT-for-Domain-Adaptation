@@ -1,7 +1,5 @@
 import os
 import csv
-import numpy as np
-import wandb
 import pickle
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -19,11 +17,10 @@ from models.mapping import Mapping
 
 def cli_main(config='config', group_id='group', exp_id='exp'):
     print("Reading configurations ...")
-    utils.wandb_init("11785-project-exp", group_id, exp_id)
     args = utils.load_config(config)
     ot_args = args.ot_plan
     map_args = args.mapping
-    save_dir = os.path.join('./exp/mapping_checkpoints', group_id, exp_id)
+    save_dir = os.path.join('./mapping_checkpoints', group_id, exp_id)
     if map_args.train_model or ot_args.train_model:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -141,9 +138,6 @@ def train_ot_plan(args, source_sampler, target_sampler, ot_planner, optimizer, s
             t.set_description("train OT plan")
             t.set_postfix(loss=loss_log, lr=optimizer.param_groups[0]['lr'])
 
-            wandb.log({"ot_planner/train loss": loss_log})
-            wandb.log({"ot_planner/learning rate": optimizer.param_groups[0]['lr']})
-
             scheduler.step()
 
 
@@ -163,9 +157,6 @@ def train_mapping(args, source_sampler, target_sampler, mapping, optimizer, sche
 
             t.set_description("train Mapping")
             t.set_postfix(loss=loss_log, lr=optimizer.param_groups[0]['lr'])
-
-            wandb.log({"mapping/train loss": loss_log})
-            wandb.log({"mapping/learning rate": optimizer.param_groups[0]['lr']})
 
             scheduler.step()
 
